@@ -3,6 +3,8 @@
 Revision ID: 0002
 Revises: 0001
 Create Date: 2026-04-16
+
+NOTE: This migration is a no-op. The column was created as VARCHAR in migration 0000.
 """
 
 from alembic import op
@@ -15,25 +17,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Cast existing BYTEA values to TEXT (encode as escape string).
-    # On a fresh DB with no rows this is a no-op; on existing data the
-    # Fernet tokens stored as bytes will be re-encoded as their text form.
-    op.alter_column(
-        "users",
-        "anthropic_api_key_encrypted",
-        existing_type=sa.LargeBinary(),
-        type_=sa.String(),
-        postgresql_using="encode(anthropic_api_key_encrypted, 'escape')",
-        nullable=True,
-    )
+    # Column was already created as VARCHAR (String) in migration 0000.
+    pass
 
 
 def downgrade() -> None:
-    op.alter_column(
-        "users",
-        "anthropic_api_key_encrypted",
-        existing_type=sa.String(),
-        type_=sa.LargeBinary(),
-        postgresql_using="anthropic_api_key_encrypted::bytea",
-        nullable=True,
-    )
+    pass

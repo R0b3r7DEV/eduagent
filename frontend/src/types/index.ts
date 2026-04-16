@@ -1,6 +1,6 @@
 export interface ApiKeyStatus {
   has_key: boolean;
-  source: "user" | "server" | "none";
+  source?: "user" | "server" | "none";
 }
 
 export interface Message {

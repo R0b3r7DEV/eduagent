@@ -45,3 +45,14 @@ async def delete_file(path: str) -> None:
     client = await get_service_client()
     await client.storage.from_(BUCKET).remove([path])
     logger.info("storage.delete.ok", path=path)
+
+
+async def download_file(path: str) -> bytes:
+    """Download file bytes from Supabase Storage."""
+    client = await get_service_client()
+    try:
+        resp = await client.storage.from_(BUCKET).download(path)
+        return resp
+    except Exception as exc:
+        logger.error("storage.download.failed", path=path, error=str(exc))
+        raise DocumentIngestionError(f"Storage download failed: {exc}") from exc

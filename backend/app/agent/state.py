@@ -15,3 +15,4 @@ class AgentState(TypedDict):
     lms_tasks: list[dict]
     session_id: str
     language: str  # "es" by default
+    api_key: str   # resolved Anthropic API key for this request

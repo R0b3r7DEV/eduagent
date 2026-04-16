@@ -1,118 +1,81 @@
-"""Documents endpoint — upload to Supabase Storage, ingestion status, listing."""
-
+"""Documents endpoint — upload, ingestion, listing."""
 import uuid
-
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.dependencies import get_current_user, get_db
 from app.models.document import Document
-from app.models.user import User
 from app.schemas.document import DocumentRead
 from app.services import storage
 
 logger = structlog.get_logger()
 router = APIRouter()
 
+ALLOWED = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+}
 
-@router.post("/upload", response_model=DocumentRead, status_code=status.HTTP_201_CREATED)
+
+@router.post("/upload", response_model=DocumentRead, status_code=201)
 async def upload_document(
     file: UploadFile,
-    current_user: User = Depends(get_current_user),
+    background_tasks: BackgroundTasks,
+    current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> Document:
-    """Validate, upload to Supabase Storage and create a DB record."""
-    max_bytes = settings.max_upload_size_mb * 1024 * 1024
+):
     data = await file.read()
+    if len(data) > settings.max_upload_size_mb * 1024 * 1024:
+        raise HTTPException(413, f"Fichero supera {settings.max_upload_size_mb} MB")
+    ct = file.content_type or "application/octet-stream"
+    if ct not in ALLOWED:
+        raise HTTPException(415, f"Tipo no soportado: {ct}")
 
-    if len(data) > max_bytes:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File exceeds {settings.max_upload_size_mb} MB limit",
-        )
-
-    allowed_types = {"application/pdf", "application/vnd.openxmlformats-officedocument"
-                     ".wordprocessingml.document", "text/plain"}
-    content_type = file.content_type or "application/octet-stream"
-    if content_type not in allowed_types:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"Unsupported file type: {content_type}",
-        )
-
-    document_id = uuid.uuid4()
-    storage_path = f"{current_user.id}/{document_id}/{file.filename}"
-
-    await storage.upload_file(storage_path, data, content_type)
-
+    doc_id = uuid.uuid4()
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
-    file_type = {"pdf": "pdf", "docx": "docx", "txt": "txt"}.get(ext, "txt")
+    ftype = {"pdf": "pdf", "docx": "docx", "txt": "txt"}.get(ext, "txt")
 
-    doc = Document(
-        id=document_id,
-        user_id=current_user.id,
-        filename=file.filename,
-        file_type=file_type,
-        size_bytes=len(data),
-        status="pending",
-    )
+    await storage.upload_file(f"{current_user.id}/{doc_id}/{file.filename}", data, ct)
+
+    doc = Document(id=doc_id, user_id=current_user.id, filename=file.filename,
+                   file_type=ftype, size_bytes=len(data), status="pending")
     db.add(doc)
     await db.commit()
     await db.refresh(doc)
 
-    logger.info("document.uploaded", document_id=str(document_id), user_id=str(current_user.id))
+    if settings.cohere_api_key:
+        from app.rag.ingestion import ingest_document
+        background_tasks.add_task(ingest_document, doc_id, db)
+
+    logger.info("document.uploaded", doc_id=str(doc_id))
     return doc
 
 
 @router.get("/", response_model=list[DocumentRead])
-async def list_documents(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> list[Document]:
-    result = await db.execute(
-        select(Document).where(Document.user_id == current_user.id)
-    )
-    return list(result.scalars().all())
+async def list_documents(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(Document).where(Document.user_id == current_user.id).order_by(Document.id.desc()))
+    return list(r.scalars().all())
 
 
 @router.get("/{document_id}", response_model=DocumentRead)
-async def get_document(
-    document_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> Document:
-    result = await db.execute(
-        select(Document).where(
-            Document.id == document_id, Document.user_id == current_user.id
-        )
-    )
-    doc = result.scalar_one_or_none()
-    if doc is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+async def get_document(document_id: uuid.UUID, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(Document).where(Document.id == document_id, Document.user_id == current_user.id))
+    doc = r.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(404, "Documento no encontrado")
     return doc
 
 
-@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(
-    document_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> None:
-    result = await db.execute(
-        select(Document).where(
-            Document.id == document_id, Document.user_id == current_user.id
-        )
-    )
-    doc = result.scalar_one_or_none()
-    if doc is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-
-    storage_path = f"{current_user.id}/{document_id}/{doc.filename}"
-    await storage.delete_file(storage_path)
-
+@router.delete("/{document_id}", status_code=204)
+async def delete_document(document_id: uuid.UUID, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(Document).where(Document.id == document_id, Document.user_id == current_user.id))
+    doc = r.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(404, "Documento no encontrado")
+    await storage.delete_file(f"{current_user.id}/{document_id}/{doc.filename}")
     await db.delete(doc)
     await db.commit()
-    logger.info("document.deleted", document_id=str(document_id))

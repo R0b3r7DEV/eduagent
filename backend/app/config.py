@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     # LLM — server-level fallback; users can supply their own key via the UI
     anthropic_api_key: str = ""
-    cohere_api_key: str
+    cohere_api_key: str = ""
 
     # Encryption key for user secrets (Fernet, 32 url-safe base64 bytes)
     # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
