@@ -6,9 +6,11 @@ import Sidebar from "@/components/layout/Sidebar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) router.replace("/login");
       else setReady(true);
@@ -19,12 +21,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  if (!ready) return <div className="flex h-screen items-center justify-center text-gray-400">Cargando…</div>;
+  if (!mounted || !ready) return <div className="flex h-screen items-center justify-center text-gray-400">Cargando…</div>;
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">{children}</div>
     </div>
   );
 }
