@@ -1,0 +1,46 @@
+# ── Secrets — NEVER commit these ─────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+# Extra safety: block any file that looks like a real secret
+*.pem
+*.key
+*_rsa
+*_dsa
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+.coverage
+htmlcov/
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.turbo/
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+*.log
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── Claude Code ───────────────────────────────────────────────────────────────
+.claude/
+CLAUDE.md

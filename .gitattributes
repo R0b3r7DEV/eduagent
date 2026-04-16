@@ -1,0 +1,9 @@
+# Normaliza a LF en el repositorio; Windows puede usar CRLF en local
+* text=auto eol=lf
+
+# Binarios — sin conversión
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.pdf binary

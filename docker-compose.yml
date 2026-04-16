@@ -1,0 +1,98 @@
+version: "3.9"
+
+# ── Full self-hosted stack (no cloud accounts needed) ─────────────────────────
+#
+# For Vercel + Railway + Supabase deployment, use the individual services
+# directly — this file is for local/on-premise deployments only.
+#
+# Usage:
+#   cp .env.example .env   # fill in values
+#   docker compose up --build
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - eduagent
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    env_file: .env
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - eduagent
+
+  # Local PostgreSQL with pgvector — mirrors the Supabase schema for offline dev
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: eduagent
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: eduagent
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eduagent -d eduagent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - eduagent
+
+  # Local Redis — mirrors Upstash for offline dev
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - eduagent
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - eduagent
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  eduagent:
+    driver: bridge
