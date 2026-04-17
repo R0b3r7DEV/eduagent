@@ -7,11 +7,16 @@ import redis.asyncio as aioredis
 import structlog
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from supabase import create_client
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
+
+logger = structlog.get_logger()
+
+# ── Supabase client (used for JWT verification) ───────────────────────────────
+_supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
 
 logger = structlog.get_logger()
 
@@ -54,22 +59,18 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Verify a Supabase-issued JWT and return (or auto-provision) the user row.
-
-    Supabase signs tokens with HS256 using the project JWT secret.
+    Verify a Supabase-issued JWT using the Supabase client (supports RS256 and HS256).
     The ``sub`` claim carries the Supabase Auth UUID.
     """
     from app.models.user import User
 
     token = credentials.credentials
     try:
-        payload = jwt.decode(
-            token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256", "HS384", "HS512"],
-            options={"verify_aud": False},
-        )
-    except JWTError as exc:
+        response = _supabase.auth.get_user(token)
+        sb_user = response.user
+        if sb_user is None:
+            raise ValueError("No user returned")
+    except Exception as exc:
         logger.warning("auth.jwt.invalid", error=str(exc))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,8 +78,8 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
-    supabase_uid: str = payload["sub"]
-    email: str = payload.get("email", "")
+    supabase_uid: str = sb_user.id
+    email: str = sb_user.email or ""
 
     result = await db.execute(select(User).where(User.supabase_uid == supabase_uid))
     user = result.scalar_one_or_none()
