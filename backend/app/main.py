@@ -23,6 +23,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         docs_url="/docs" if settings.environment == "development" else None,
         redoc_url="/redoc" if settings.environment == "development" else None,
+        redirect_slashes=False,
     )
 
     # ── Rate limiting ─────────────────────────────────────────────────────────
