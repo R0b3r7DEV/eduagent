@@ -12,7 +12,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://your-backend.railway.app/api/:path*"
+      "destination": "https://eduagent-production-9f39.up.railway.app/api/:path*"
     }
   ],
   "headers": [
