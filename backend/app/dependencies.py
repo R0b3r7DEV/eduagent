@@ -66,8 +66,8 @@ async def get_current_user(
         payload = jwt.decode(
             token,
             settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            audience="authenticated",
+            algorithms=["HS256", "HS384", "HS512"],
+            options={"verify_aud": False},
         )
     except JWTError as exc:
         logger.warning("auth.jwt.invalid", error=str(exc))
