@@ -21,9 +21,11 @@ RUN uv pip install --system --no-cache ".[dev]"
 COPY . .
 
 # ── Production stage ──────────────────────────────────────────────────────────
+# Uses shell form so $PORT (injected by Railway) is expanded at runtime.
+# Falls back to 8000 when running locally without Railway.
 FROM base AS production
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2
 
 # ── Development stage (hot-reload) ────────────────────────────────────────────
 FROM base AS development
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --reload

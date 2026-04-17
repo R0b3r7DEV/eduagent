@@ -30,9 +30,12 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     # ── CORS ──────────────────────────────────────────────────────────────────
+    # allow_origins covers explicit origins (localhost, custom domains).
+    # allow_origin_regex covers all *.vercel.app preview/production deployments.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.backend_cors_origins,
+        allow_origin_regex=settings.cors_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -62,7 +65,7 @@ def create_app() -> FastAPI:
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health", tags=["health"])
     async def health() -> dict:
-        return {"status": "ok", "version": "0.1.0"}
+        return {"status": "ok", "version": "1.0.0"}
 
     return app
 

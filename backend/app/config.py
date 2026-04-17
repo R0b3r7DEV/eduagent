@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     # ── App ─────────────────────────────────────────────────────────────────────
     environment: Literal["development", "production"] = "development"
     backend_cors_origins: list[str] = ["http://localhost:3000"]
+    # Regex for wildcard CORS — covers all *.vercel.app preview/production URLs.
+    # Override via env var CORS_ORIGIN_REGEX for custom domains.
+    cors_origin_regex: str = r"https://.*\.vercel\.app"
     max_upload_size_mb: int = 50
     chunk_size: int = 512
     chunk_overlap: int = 64
