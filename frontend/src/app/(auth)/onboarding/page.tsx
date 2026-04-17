@@ -27,7 +27,10 @@ const anthropicSchema = z.object({
   api_key: z.string().min(20, "Clave inválida").startsWith("sk-ant-", "Debe empezar con sk-ant-"),
 });
 const geminiSchema = z.object({
-  api_key: z.string().min(10, "Clave inválida").startsWith("AIza", "Debe empezar con AIza"),
+  api_key: z.string().min(10, "Clave inválida").refine(
+    (v) => v.startsWith("AIza") || v.startsWith("AQ."),
+    "Debe empezar con AIza o AQ."
+  ),
 });
 
 type AgeForm       = z.infer<typeof ageSchema>;

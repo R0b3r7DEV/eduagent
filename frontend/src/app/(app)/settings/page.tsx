@@ -26,7 +26,10 @@ const antSchema = z.object({
   api_key: z.string().min(20, "Clave muy corta").startsWith("sk-ant-", "Debe empezar por sk-ant-"),
 });
 const gemSchema = z.object({
-  api_key: z.string().min(10, "Clave muy corta").startsWith("AIza", "Debe empezar por AIza"),
+  api_key: z.string().min(10, "Clave muy corta").refine(
+    (v) => v.startsWith("AIza") || v.startsWith("AQ."),
+    "Debe empezar por AIza o AQ."
+  ),
 });
 type AntForm = z.infer<typeof antSchema>;
 type GemForm = z.infer<typeof gemSchema>;
