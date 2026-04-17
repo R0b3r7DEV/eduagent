@@ -184,7 +184,7 @@ class GeminiProvider(LLMProvider):
 
     @staticmethod
     def validate_api_key(api_key: str) -> bool:
-        return api_key.startswith("AIza")
+        return api_key.startswith(("AIza", "AQ."))
 
 
 # ── Factory ────────────────────────────────────────────────────────────────────

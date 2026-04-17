@@ -21,8 +21,8 @@ const PROVIDERS: { id: Provider; label: string; placeholder: string; hint: strin
   {
     id: "gemini",
     label: "Google Gemini",
-    placeholder: "AIzaSy…",
-    hint: "Empieza por AIza",
+    placeholder: "AIzaSy… o AQ.A…",
+    hint: "Empieza por AIza o AQ.",
     url: "https://aistudio.google.com/app/apikey",
   },
 ];
