@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_current_user, get_db, resolve_anthropic_key
+from app.dependencies import get_current_user, get_db, resolve_llm_key
 from app.models.session import ChatMessage, ChatSession
 from app.schemas.chat import ChatRequest
 
@@ -24,9 +24,10 @@ def _sse(p: dict) -> str:
 
 async def _no_key_stream() -> AsyncGenerator[str, None]:
     yield _sse({"type": "no_api_key", "content": (
-        "Para ayudarte necesito tu API key de Anthropic. "
-        "Es gratuita en console.anthropic.com → API Keys. "
-        "Añádela en Configuración → Mi API Key."
+        "Para chatear necesitas añadir una API key. "
+        "Puedes usar **Anthropic Claude** (console.anthropic.com) "
+        "o **Google Gemini**, que es gratuito (aistudio.google.com). "
+        "Añádela en ⚙️ Configuración → Mi API Key."
     )})
     yield _sse({"type": "done"})
 
@@ -37,13 +38,14 @@ async def stream_chat(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
-    api_key = resolve_anthropic_key(current_user)
-    if not api_key:
+    provider, api_key = resolve_llm_key(current_user)
+    if not provider or not api_key:
         generator = _no_key_stream()
     else:
         from app.services.chat_service import stream_response
         generator = stream_response(
             message=request.message,
+            provider=provider,
             api_key=api_key,
             user=current_user,
             session_id=request.session_id,

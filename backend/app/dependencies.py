@@ -94,28 +94,65 @@ async def get_current_user(
     return user
 
 
-# ── Anthropic key resolution ───────────────────────────────────────────────────
+# ── LLM key resolution ────────────────────────────────────────────────────────
 
-def resolve_anthropic_key(user) -> str | None:
-    """
-    Return the Anthropic API key for *user*, or None.
+def resolve_llm_key(user) -> tuple[str, str] | tuple[None, None]:
+    """Return (provider, api_key) for *user*, or (None, None) if no key is set.
 
-    Resolution order:
-    1. User's own key (decrypted from DB) — always preferred.
+    Resolution order per provider:
+    1. User's own encrypted key from DB — always preferred.
     2. Server env key — only as fallback in development mode.
-       Production always requires the user to supply their own key.
+
+    The active provider is stored in user.llm_provider (default: 'anthropic').
+    Falls back to the other provider if the active one has no key.
     """
     from app.services.crypto import DecryptionError, decrypt
 
-    if user.anthropic_api_key_encrypted:
+    def _try_decrypt(enc: str | None) -> str | None:
+        if not enc:
+            return None
         try:
-            return decrypt(user.anthropic_api_key_encrypted)
+            return decrypt(enc)
         except DecryptionError:
-            pass  # key rotation / corruption — fall through
+            return None
 
-    if settings.environment == "development" and settings.anthropic_api_key:
-        return settings.anthropic_api_key
+    active = getattr(user, "llm_provider", None) or "anthropic"
 
+    # Try active provider first
+    if active == "anthropic":
+        key = _try_decrypt(user.anthropic_api_key_encrypted)
+        if key:
+            return "anthropic", key
+        # dev fallback
+        if settings.environment == "development" and settings.anthropic_api_key:
+            return "anthropic", settings.anthropic_api_key
+        # fall back to gemini if user has it
+        key = _try_decrypt(getattr(user, "gemini_api_key_encrypted", None))
+        if key:
+            return "gemini", key
+    else:  # active == "gemini"
+        key = _try_decrypt(getattr(user, "gemini_api_key_encrypted", None))
+        if key:
+            return "gemini", key
+        # fall back to anthropic
+        key = _try_decrypt(user.anthropic_api_key_encrypted)
+        if key:
+            return "anthropic", key
+        if settings.environment == "development" and settings.anthropic_api_key:
+            return "anthropic", settings.anthropic_api_key
+
+    # dev fallback for gemini
+    if settings.environment == "development" and settings.gemini_api_key:
+        return "gemini", settings.gemini_api_key
+
+    return None, None
+
+
+# Legacy alias — kept for any existing callers
+def resolve_anthropic_key(user) -> str | None:
+    provider, key = resolve_llm_key(user)
+    if provider == "anthropic":
+        return key
     return None
 
 
@@ -124,9 +161,9 @@ def resolve_anthropic_key(user) -> str | None:
 async def get_anthropic_client(
     current_user=Depends(get_current_user),
 ) -> anthropic.AsyncAnthropic:
-    """Return a ready AsyncAnthropic client or raise 402. Chat uses resolve_anthropic_key."""
-    api_key = resolve_anthropic_key(current_user)
-    if not api_key:
+    """Return a ready AsyncAnthropic client or raise 402."""
+    provider, api_key = resolve_llm_key(current_user)
+    if provider != "anthropic" or not api_key:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail={"error": "no_anthropic_key", "message": "Add your Anthropic API key."},

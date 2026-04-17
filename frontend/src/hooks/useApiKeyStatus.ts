@@ -9,5 +9,19 @@ export function useApiKeyStatus() {
     queryFn: () => apiFetch<ApiKeyStatus>("/user/api-key/status"),
     retry: false,
   });
-  return { loading: isLoading, hasKey: data?.has_key ?? null, source: data?.source ?? null, refetch };
+
+  const hasAnyKey =
+    (data?.anthropic?.has_key ?? false) || (data?.gemini?.has_key ?? false);
+
+  return {
+    loading: isLoading,
+    // Legacy: true if any provider has a key
+    hasKey: hasAnyKey,
+    // Per-provider
+    hasAnthropicKey: data?.anthropic?.has_key ?? false,
+    hasGeminiKey: data?.gemini?.has_key ?? false,
+    activeProvider: data?.active_provider ?? null,
+    data,
+    refetch,
+  };
 }

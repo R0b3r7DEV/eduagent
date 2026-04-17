@@ -21,8 +21,11 @@ class User(Base):
     age: Mapped[int | None] = mapped_column(Integer)
     student_level: Mapped[str | None] = mapped_column(String(10))  # child|teen|adult
     parental_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    # Fernet-encrypted Anthropic API key (stored as base64 VARCHAR, nullable = not set)
+    # Active LLM provider — 'anthropic' | 'gemini'
+    llm_provider: Mapped[str] = mapped_column(String(20), default="anthropic", server_default="anthropic")
+    # Fernet-encrypted API keys (nullable = not set)
     anthropic_api_key_encrypted: Mapped[str | None] = mapped_column(String)
+    gemini_api_key_encrypted: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -1,26 +1,23 @@
-"""Chat service — session management, RAG, and SSE streaming."""
+"""Chat service — session management, RAG, and SSE streaming.
+
+Supports any LLMProvider (Anthropic or Gemini) transparently.
+"""
 import json
 import uuid
 from typing import AsyncGenerator
 
-import anthropic
 import structlog
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.llm_provider import LLMProvider, get_provider
 from app.models.session import ChatMessage, ChatSession
 
 logger = structlog.get_logger()
 
-_PROMPTS = {
-    "child": None,
-    "teen": None,
-    "adult": None,
-}
-
 
 def _get_system_prompt(level: str, language: str, context: str, intent: str) -> str:
-    from app.agent.prompts import tutor_child, tutor_teen, tutor_adult, summarizer
+    from app.agent.prompts import summarizer, tutor_adult, tutor_child, tutor_teen
 
     base = {
         "child": tutor_child.SYSTEM_PROMPT,
@@ -38,7 +35,7 @@ def _get_system_prompt(level: str, language: str, context: str, intent: str) -> 
     return base.format(language=language, context=ctx) + hw
 
 
-async def _detect_intent(message: str, history: list, api_key: str) -> str:
+async def _detect_intent(message: str, history: list, llm: LLMProvider) -> str:
     valid = {"tutor", "homework_help", "summarize", "tasks", "general"}
     hist = "\n".join(f"{m.role}: {m.content[:80]}" for m in history[-5:]) or "—"
     prompt = (
@@ -46,32 +43,33 @@ async def _detect_intent(message: str, history: list, api_key: str) -> str:
         "Clasifica la intención (una palabra): tutor / homework_help / summarize / tasks / general"
     )
     try:
-        client = anthropic.AsyncAnthropic(api_key=api_key)
-        resp = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=10,
+        intent = await llm.complete(
             messages=[{"role": "user", "content": prompt}],
+            system_prompt="Eres un clasificador de intenciones. Responde solo con una palabra.",
+            max_tokens=10,
         )
-        intent = resp.content[0].text.strip().lower().split()[0]
-        return intent if intent in valid else "tutor"
+        word = intent.strip().lower().split()[0]
+        return word if word in valid else "tutor"
     except Exception:
         return "tutor"
 
 
 async def stream_response(
     message: str,
+    provider: str,
     api_key: str,
     user,
     session_id: str | None,
     db: AsyncSession,
     language: str = "es",
 ) -> AsyncGenerator[str, None]:
-    """Yield SSE-formatted strings."""
+    """Yield SSE-formatted strings for the chat stream."""
 
     def sse(payload: dict) -> str:
         return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
     student_level = user.student_level or "adult"
+    llm = get_provider(provider, api_key)
 
     # ── 1. Session ─────────────────────────────────────────────────────────────
     session = None
@@ -103,7 +101,7 @@ async def stream_response(
     history = list(reversed(r.scalars().all()))
 
     # ── 3. Intent ──────────────────────────────────────────────────────────────
-    intent = await _detect_intent(message, history, api_key)
+    intent = await _detect_intent(message, history, llm)
     yield sse({"type": "intent", "intent": intent})
 
     # ── 4. RAG context ─────────────────────────────────────────────────────────
@@ -119,10 +117,10 @@ async def stream_response(
         except Exception as e:
             logger.warning("chat.rag.skip", error=str(e))
 
-    # ── 5. Build Anthropic messages ────────────────────────────────────────────
+    # ── 5. Build messages ──────────────────────────────────────────────────────
     system_prompt = _get_system_prompt(student_level, language, context_text, intent)
-    anthropic_msgs = [{"role": m.role, "content": m.content} for m in history]
-    anthropic_msgs.append({"role": "user", "content": message})
+    messages = [{"role": m.role, "content": m.content} for m in history]
+    messages.append({"role": "user", "content": message})
 
     # ── 6. Save user message ───────────────────────────────────────────────────
     user_msg = ChatMessage(session_id=session.id, role="user", content=message, intent=intent)
@@ -131,26 +129,18 @@ async def stream_response(
         session.title = message[:60] + ("…" if len(message) > 60 else "")
     await db.commit()
 
-    # ── 7. Stream LLM ──────────────────────────────────────────────────────────
+    # ── 7. Stream ──────────────────────────────────────────────────────────────
     full = ""
     try:
-        client = anthropic.AsyncAnthropic(api_key=api_key)
-        async with client.messages.stream(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
-            system=system_prompt,
-            messages=anthropic_msgs,
-        ) as stream:
-            async for token in stream.text_stream:
-                full += token
-                yield sse({"type": "text", "content": token})
+        async for token in llm.stream(messages, system_prompt):
+            full += token
+            yield sse({"type": "text", "content": token})
 
         for src in sources:
             fname = src.get("filename")
             if fname:
                 yield sse({"type": "source", "filename": fname, "course": src.get("course", "")})
 
-        # Save assistant message
         db.add(ChatMessage(
             session_id=session.id,
             role="assistant",
@@ -161,8 +151,10 @@ async def stream_response(
         await db.commit()
         yield sse({"type": "done"})
 
-    except anthropic.AuthenticationError:
-        yield sse({"type": "error", "content": "API key inválida. Verifica tu clave en Ajustes."})
     except Exception as exc:
-        logger.error("chat.stream.error", error=str(exc))
-        yield sse({"type": "error", "content": "Error generando respuesta. Inténtalo de nuevo."})
+        err = str(exc).lower()
+        if "auth" in err or "api key" in err or "invalid" in err:
+            yield sse({"type": "error", "content": "API key inválida. Verifica tu clave en Ajustes."})
+        else:
+            logger.error("chat.stream.error", provider=provider, error=str(exc))
+            yield sse({"type": "error", "content": "Error generando respuesta. Inténtalo de nuevo."})

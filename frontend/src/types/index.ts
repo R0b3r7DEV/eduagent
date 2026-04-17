@@ -1,6 +1,19 @@
-export interface ApiKeyStatus {
+export type LLMProvider = "anthropic" | "gemini";
+
+export interface ProviderKeyStatus {
   has_key: boolean;
-  source?: "user" | "server" | "none";
+}
+
+export interface ApiKeyStatus {
+  anthropic: ProviderKeyStatus;
+  gemini: ProviderKeyStatus;
+  active_provider: LLMProvider;
+}
+
+export interface ApiKeyVerifyResult {
+  provider: LLMProvider;
+  valid: boolean;
+  error?: string | null;
 }
 
 export interface Message {

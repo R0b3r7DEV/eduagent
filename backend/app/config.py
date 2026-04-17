@@ -10,8 +10,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    # LLM — server-level fallback; users can supply their own key via the UI
+    # LLM — server-level fallbacks; users supply their own keys in production
     anthropic_api_key: str = ""
+    gemini_api_key: str = ""
+    default_llm_provider: str = "anthropic"
     cohere_api_key: str = ""
 
     # Encryption key for user secrets (Fernet, 32 url-safe base64 bytes)
