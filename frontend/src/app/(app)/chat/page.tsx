@@ -1,18 +1,24 @@
 "use client";
-import ApiKeyBanner from "@/components/chat/ApiKeyBanner";
-import ChatWindow from "@/components/chat/ChatWindow";
+import { useUiStore } from "@/stores/uiStore";
 import { useApiKeyStatus } from "@/hooks/useApiKeyStatus";
+import ChatWindow from "@/components/chat/ChatWindow";
+import ApiKeyBanner from "@/components/chat/ApiKeyBanner";
+import RightPanel from "@/components/chat/RightPanel";
 
 export default function ChatPage() {
-  const { loading, hasKey, refetch } = useApiKeyStatus();
+  const { rightPanelOpen } = useUiStore();
+  const { loading, hasKey } = useApiKeyStatus();
+
   return (
-    <main className="flex h-full flex-col">
-      {!loading && hasKey === false && (
-        <div className="px-4 pt-4">
-          <ApiKeyBanner onKeyAdded={refetch} />
-        </div>
-      )}
-      <ChatWindow />
-    </main>
+    <div className="flex h-full overflow-hidden">
+      {/* Center column */}
+      <main className="flex flex-1 flex-col overflow-hidden min-w-0">
+        {!loading && hasKey === false && <ApiKeyBanner />}
+        <ChatWindow />
+      </main>
+
+      {/* Right panel — collapsible */}
+      {rightPanelOpen && <RightPanel />}
+    </div>
   );
 }

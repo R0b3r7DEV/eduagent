@@ -1,109 +1,117 @@
 "use client";
-import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTasks } from "@/hooks/useTasks";
+import { useChatStore } from "@/stores/chatStore";
 import TaskCard from "@/components/tasks/TaskCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Task } from "@/types/index";
-import { CheckSquare, RefreshCw, AlertCircle } from "lucide-react";
+import { CheckSquare, RefreshCw, AlertCircle, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+
+const FILTERS = ["Todos", "Pendiente", "En curso", "Hecho"] as const;
+type Filter = typeof FILTERS[number];
 
 export default function TasksPage() {
-  const [tasks, setTasks]     = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
+  const { tasks, isLoading, error, refetch } = useTasks();
+  const [filter, setFilter] = useState<Filter>("Todos");
+  const [search, setSearch] = useState("");
+  const reset = useChatStore(s => s.reset);
+  const router = useRouter();
 
-  async function load() {
-    setLoading(true); setError(null);
-    try {
-      const data = await apiFetch<Task[]>("/tasks");
-      setTasks(data);
-    } catch {
-      setError("No se pudieron cargar los deberes. ¿Está el backend activo?");
-    } finally {
-      setLoading(false);
-    }
+  function handleStudy(task: Task) {
+    reset();
+    useChatStore.setState({ messages: [] });
+    router.push(`/chat?context=${encodeURIComponent(task.title)}`);
   }
 
-  useEffect(() => { load(); }, []);
-
-  const pending     = tasks.filter(t => t.status === "pending");
-  const in_progress = tasks.filter(t => t.status === "in_progress");
-  const done        = tasks.filter(t => t.status === "done");
+  const filtered = tasks.filter(t => {
+    const matchFilter =
+      filter === "Todos"     ? true :
+      filter === "Pendiente" ? t.status === "pending" :
+      filter === "En curso"  ? t.status === "in_progress" :
+                               t.status === "done";
+    const matchSearch = search === "" ||
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      (t.subject ?? "").toLowerCase().includes(search.toLowerCase());
+    return matchFilter && matchSearch;
+  });
 
   return (
-    <main className="flex flex-col h-full overflow-y-auto bg-gray-50">
-      <div className="border-b border-gray-200 bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
+    <main className="flex h-full flex-col overflow-hidden bg-bg">
+      {/* Header */}
+      <div className="border-b border-border bg-surface px-6 py-4 shrink-0">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <CheckSquare size={20} className="text-blue-600" />
-            <h1 className="text-lg font-semibold text-gray-900">Deberes</h1>
-            {!loading && (
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
-                {tasks.length}
-              </span>
+            <CheckSquare size={18} className="text-violet-400" />
+            <h1 className="text-lg font-semibold text-text-primary">Deberes</h1>
+            {!isLoading && (
+              <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-muted">{tasks.length}</span>
             )}
           </div>
           <button
-            onClick={load}
-            disabled={loading}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-40"
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 rounded-[--radius-sm] px-3 py-1.5 text-xs text-text-muted hover:bg-surface-2 transition-colors disabled:opacity-40"
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
             Actualizar
           </button>
         </div>
+
+        {/* Search + filters */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-xs">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <Input
+              placeholder="Buscar deberes…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 h-8 text-xs"
+            />
+          </div>
+          <div className="flex gap-1">
+            {FILTERS.map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded-[--radius-sm] px-3 py-1.5 text-xs font-medium transition-colors ${
+                  filter === f
+                    ? "bg-violet-600/15 text-violet-400"
+                    : "text-text-muted hover:bg-surface-2 hover:text-text-secondary"
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="flex-1 px-6 py-6">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 py-5">
         {error && (
-          <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <AlertCircle size={16} className="shrink-0" />
-            {error}
+          <div className="mb-4 flex items-center gap-2 rounded-[--radius-lg] border border-error/20 bg-error/8 px-4 py-3 text-sm text-error">
+            <AlertCircle size={15} className="shrink-0" />
+            No se pudieron cargar los deberes. ¿Está el backend activo?
           </div>
         )}
 
-        {loading ? (
-          <div className="flex flex-col gap-3">
-            {[1,2,3].map(i => (
-              <div key={i} className="h-24 rounded-xl bg-gray-200 animate-pulse" />
-            ))}
+        {isLoading ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-28" />)}
           </div>
-        ) : tasks.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <CheckSquare size={40} className="mb-3 text-gray-300" />
-            <p className="font-medium text-gray-500">Sin deberes pendientes</p>
-            <p className="mt-1 text-sm text-gray-400">Conecta tu aula virtual para sincronizar tareas.</p>
+            <CheckSquare size={36} className="mb-3 text-border" />
+            <p className="font-medium text-text-secondary">Sin deberes</p>
+            <p className="mt-1 text-sm text-text-muted">
+              {search ? "Prueba otra búsqueda." : "Conecta tu aula virtual para sincronizar tareas."}
+            </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {pending.length > 0 && (
-              <section>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                  Pendientes · {pending.length}
-                </h2>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {pending.map(t => <TaskCard key={t.id} task={t} />)}
-                </div>
-              </section>
-            )}
-            {in_progress.length > 0 && (
-              <section>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                  En curso · {in_progress.length}
-                </h2>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {in_progress.map(t => <TaskCard key={t.id} task={t} />)}
-                </div>
-              </section>
-            )}
-            {done.length > 0 && (
-              <section>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                  Completados · {done.length}
-                </h2>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 opacity-60">
-                  {done.map(t => <TaskCard key={t.id} task={t} />)}
-                </div>
-              </section>
-            )}
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map(t => <TaskCard key={t.id} task={t} onStudy={handleStudy} />)}
           </div>
         )}
       </div>

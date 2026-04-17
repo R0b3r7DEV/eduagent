@@ -1,88 +1,95 @@
+import { motion } from "framer-motion";
+import { Clock, ExternalLink, MessageSquare } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { Task } from "@/types/index";
-import { Calendar, ExternalLink, Clock } from "lucide-react";
 
-const PRIORITY_STYLES: Record<number, { label: string; dot: string }> = {
-  1: { label: "Alta",  dot: "bg-red-500"    },
-  2: { label: "Media", dot: "bg-yellow-400" },
-  3: { label: "Baja",  dot: "bg-green-500"  },
+const SUBJECT_COLORS: Record<string, string> = {
+  "matemáticas": "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  "historia":    "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  "física":      "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+  "química":     "bg-green-500/10 text-green-400 border-green-500/20",
+  "biología":    "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  "inglés":      "bg-violet-500/10 text-violet-400 border-violet-500/20",
+  "lengua":      "bg-pink-500/10 text-pink-400 border-pink-500/20",
 };
 
-const STATUS_STYLES: Record<string, string> = {
-  pending:     "bg-gray-100 text-gray-600",
-  in_progress: "bg-blue-50 text-blue-700",
-  done:        "bg-green-50 text-green-700",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  pending:     "Pendiente",
-  in_progress: "En curso",
-  done:        "Hecho",
-};
-
-function formatDate(iso?: string) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  const now = new Date();
-  const diff = Math.ceil((d.getTime() - now.getTime()) / 86400000);
-  const fmt = d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
-  if (diff < 0)  return { label: `Venció el ${fmt}`, urgent: true };
-  if (diff === 0) return { label: "Vence hoy",       urgent: true };
-  if (diff === 1) return { label: "Vence mañana",    urgent: true };
-  return { label: `Vence el ${fmt}`,                  urgent: false };
+function subjectColor(subject?: string): string {
+  if (!subject) return "bg-surface-2 text-text-muted border-border";
+  return SUBJECT_COLORS[subject.toLowerCase()] ?? "bg-surface-2 text-text-muted border-border";
 }
 
-export default function TaskCard({ task }: { task: Task }) {
-  const priority = PRIORITY_STYLES[task.priority ?? 3];
-  const date     = formatDate(task.dueDate);
+function urgency(dueDate?: string): { label: string; cls: string } {
+  if (!dueDate) return { label: "Sin fecha", cls: "text-text-muted" };
+  const diff = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000);
+  if (diff < 0)   return { label: "Vencida",  cls: "text-error font-semibold" };
+  if (diff === 0) return { label: "Hoy",      cls: "text-error font-semibold" };
+  if (diff === 1) return { label: "Mañana",   cls: "text-warning font-semibold" };
+  if (diff <= 3)  return { label: `${diff} días`, cls: "text-warning" };
+  return { label: new Date(dueDate).toLocaleDateString("es-ES", { day: "numeric", month: "short" }), cls: "text-text-muted" };
+}
+
+const STATUS_VARIANT: Record<string, "default" | "success" | "muted"> = {
+  pending:     "muted",
+  in_progress: "default",
+  done:        "success",
+};
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pendiente", in_progress: "En curso", done: "Hecho",
+};
+
+interface Props {
+  task: Task;
+  onStudy?: (task: Task) => void;
+}
+
+export default function TaskCard({ task, onStudy }: Props) {
+  const due = urgency(task.dueDate);
 
   return (
-    <div className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-gray-300 hover:shadow">
-      <div className="flex items-start justify-between gap-3">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group rounded-[--radius-lg] border border-border bg-surface p-4 hover:border-border/80 hover:shadow-sm transition-all"
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <div className="mb-1.5 flex items-center gap-2 flex-wrap">
+          <div className="mb-2 flex flex-wrap gap-1.5">
             {task.subject && (
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${subjectColor(task.subject)}`}>
                 {task.subject}
               </span>
             )}
             {task.courseName && (
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500">
+              <span className="inline-flex items-center rounded-full border border-border bg-surface-2 px-2 py-0.5 text-[11px] text-text-muted">
                 {task.courseName}
               </span>
             )}
           </div>
-          <h3 className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2">{task.title}</h3>
+          <h3 className="text-sm font-semibold text-text-primary leading-snug line-clamp-2">{task.title}</h3>
           {task.description && (
-            <p className="mt-1 text-xs text-gray-500 line-clamp-2">{task.description}</p>
+            <p className="mt-1 text-xs text-text-muted line-clamp-2">{task.description}</p>
           )}
         </div>
-
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${STATUS_STYLES[task.status]}`}>
-            {STATUS_LABELS[task.status]}
-          </span>
-          {priority && (
-            <span className="flex items-center gap-1 text-[11px] text-gray-400">
-              <span className={`h-1.5 w-1.5 rounded-full ${priority.dot}`} />
-              {priority.label}
-            </span>
-          )}
-        </div>
+        <Badge variant={STATUS_VARIANT[task.status] ?? "muted"} className="shrink-0">
+          {STATUS_LABEL[task.status] ?? task.status}
+        </Badge>
       </div>
 
-      <div className="mt-3 flex items-center justify-between">
-        {date ? (
-          <span className={`flex items-center gap-1 text-xs ${date.urgent ? "text-red-500 font-medium" : "text-gray-400"}`}>
-            <Clock size={12} />
-            {date.label}
-          </span>
-        ) : (
-          <span className="flex items-center gap-1 text-xs text-gray-400">
-            <Calendar size={12} />
-            Sin fecha
-          </span>
+      <div className="flex items-center justify-between">
+        <span className={`flex items-center gap-1 text-xs ${due.cls}`}>
+          <Clock size={11} />
+          {due.label}
+        </span>
+        {onStudy && (
+          <button
+            onClick={() => onStudy(task)}
+            className="invisible group-hover:visible flex items-center gap-1.5 rounded-[--radius-sm] px-2 py-1 text-xs text-text-muted hover:bg-violet-600/10 hover:text-violet-400 transition-colors"
+          >
+            <MessageSquare size={12} />
+            Estudiar esto
+          </button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

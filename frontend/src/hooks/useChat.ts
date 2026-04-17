@@ -57,7 +57,9 @@ export function useChat() {
       }
     } catch (e: unknown) {
       if ((e as Error)?.name !== "AbortError") {
-        appendToken(assistantId, "⚠️ Error de conexión. Inténtalo de nuevo.");
+        const { toast } = await import("sonner");
+        toast.error("Error de conexión con el agente");
+        finalizeMessage(assistantId);
       }
     } finally {
       finalizeMessage(assistantId);

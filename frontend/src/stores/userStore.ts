@@ -1,11 +1,17 @@
 import { create } from "zustand";
 
 interface UserStore {
-  token: string | null;
-  setToken: (token: string | null) => void;
+  email: string | null;
+  name: string | null;
+  onboardingDone: boolean;
+  setUser: (data: { email?: string; name?: string }) => void;
+  setOnboardingDone: (done: boolean) => void;
 }
 
 export const useUserStore = create<UserStore>((set) => ({
-  token: null,
-  setToken: (token) => set({ token }),
+  email: null,
+  name: null,
+  onboardingDone: false,
+  setUser: (data) => set((s) => ({ ...s, ...data })),
+  setOnboardingDone: (done) => set({ onboardingDone: done }),
 }));

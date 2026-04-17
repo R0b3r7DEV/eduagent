@@ -7,7 +7,7 @@ import Sidebar from "@/components/layout/Sidebar";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady]     = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -21,10 +21,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  if (!mounted || !ready) return <div className="flex h-screen items-center justify-center text-gray-400">Cargando…</div>;
+  if (!mounted || !ready) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-bg">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-violet-500" />
+          <p className="text-sm text-text-muted">Cargando…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-bg">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">{children}</div>
     </div>

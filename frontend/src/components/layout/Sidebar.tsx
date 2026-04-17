@@ -2,10 +2,22 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { MessageSquare, CheckSquare, FileText, Settings, LogOut, GraduationCap, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  MessageSquare, CheckSquare, FileText, Settings,
+  LogOut, GraduationCap, Plus, PanelLeftClose, PanelLeftOpen,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useChatStore } from "@/stores/chatStore";
-import { useState, useEffect } from "react";
+import { useUiStore } from "@/stores/uiStore";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 
 const NAV = [
   { href: "/chat",      label: "Chat",        icon: MessageSquare },
@@ -16,8 +28,10 @@ const NAV = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const reset = useChatStore((s) => s.reset);
+  const router   = useRouter();
+  const reset    = useChatStore((s) => s.reset);
+  const sessions = useChatStore((s) => s.sessions);
+  const { sidebarCollapsed, toggleSidebar } = useUiStore();
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,66 +43,171 @@ export default function Sidebar() {
     router.replace("/login");
   }
 
-  function handleNewChat() {
-    reset();
-    router.push("/chat");
-  }
+  const initials = email ? email.slice(0, 2).toUpperCase() : "?";
 
   return (
-    <aside className="flex h-screen w-60 flex-col bg-gray-900 text-white">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 py-5 border-b border-gray-700/50">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500">
-          <GraduationCap className="h-4.5 w-4.5 text-white" size={18} />
+    <TooltipProvider delayDuration={300}>
+      <motion.aside
+        animate={{ width: sidebarCollapsed ? 64 : 260 }}
+        transition={{ duration: 0.22, ease: "easeInOut" }}
+        className="relative flex h-screen flex-col border-r border-border bg-surface overflow-hidden"
+      >
+        {/* ── Header ───────────────────────────────────────── */}
+        <div className="flex h-14 items-center justify-between px-3 border-b border-border shrink-0">
+          <AnimatePresence>
+            {!sidebarCollapsed && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="flex items-center gap-2.5"
+              >
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600">
+                  <GraduationCap size={14} className="text-white" />
+                </div>
+                <span className="text-[15px] font-semibold text-text-primary">EduAgent AI</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {sidebarCollapsed && (
+            <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600">
+              <GraduationCap size={14} className="text-white" />
+            </div>
+          )}
+          {!sidebarCollapsed && (
+            <button onClick={toggleSidebar} className="text-text-muted hover:text-text-secondary transition-colors p-1 rounded-md hover:bg-surface-2">
+              <PanelLeftClose size={16} />
+            </button>
+          )}
         </div>
-        <span className="text-[15px] font-semibold tracking-tight">EduAgent AI</span>
-      </div>
 
-      {/* New chat */}
-      <div className="px-3 pt-4 pb-2">
-        <button
-          onClick={handleNewChat}
-          className="flex w-full items-center gap-2 rounded-lg border border-gray-600/60 px-3 py-2 text-sm text-gray-300 hover:border-gray-500 hover:bg-gray-800 transition-colors"
-        >
-          <Plus size={15} />
-          Nuevo chat
-        </button>
-      </div>
+        <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden no-scrollbar py-3">
+          {/* ── New chat button ────────────────────────────── */}
+          <div className="px-2 mb-3">
+            {sidebarCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => { reset(); router.push("/chat"); }}
+                    className="flex h-9 w-full items-center justify-center rounded-[--radius] border border-border text-text-muted hover:border-violet-600/50 hover:text-violet-400 transition-colors"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Nuevo chat</TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={() => { reset(); router.push("/chat"); }}
+                className="flex w-full items-center gap-2 rounded-[--radius] border border-border px-3 py-2 text-sm text-text-muted hover:border-violet-600/50 hover:bg-surface-2 hover:text-text-secondary transition-colors"
+              >
+                <Plus size={15} />
+                Nuevo chat
+              </button>
+            )}
+          </div>
 
-      {/* Nav */}
-      <nav className="flex flex-col gap-0.5 px-3 flex-1">
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                active
-                  ? "bg-gray-700/80 text-white"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
-              }`}
-            >
-              <Icon size={17} className={active ? "text-blue-400" : "text-gray-500"} />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+          {/* ── Navigation ────────────────────────────────── */}
+          <nav className="flex flex-col gap-0.5 px-2">
+            {NAV.map(({ href, label, icon: Icon }) => {
+              const active = pathname.startsWith(href);
+              const item = (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-[--radius] px-2.5 py-2 text-sm font-medium transition-colors",
+                    sidebarCollapsed && "justify-center px-0",
+                    active
+                      ? "bg-violet-600/15 text-violet-400"
+                      : "text-text-muted hover:bg-surface-2 hover:text-text-secondary"
+                  )}
+                >
+                  <Icon size={16} className={active ? "text-violet-400" : "text-text-muted"} />
+                  {!sidebarCollapsed && <span>{label}</span>}
+                </Link>
+              );
+              return sidebarCollapsed ? (
+                <Tooltip key={href}>
+                  <TooltipTrigger asChild>{item}</TooltipTrigger>
+                  <TooltipContent side="right">{label}</TooltipContent>
+                </Tooltip>
+              ) : item;
+            })}
+          </nav>
 
-      {/* User + logout */}
-      <div className="border-t border-gray-700/50 px-3 py-3">
-        <div className="mb-1 px-3 py-1.5">
-          <p className="text-xs text-gray-500 truncate">{email ?? "..."}</p>
+          {/* ── Recent conversations ──────────────────────── */}
+          {!sidebarCollapsed && sessions.length > 0 && (
+            <div className="mt-4 px-2">
+              <p className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+                Recientes
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {sessions.slice(0, 8).map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/chat`}
+                    onClick={() => useChatStore.setState({ sessionId: s.id, messages: [] })}
+                    className="truncate rounded-[--radius] px-2.5 py-1.5 text-xs text-text-muted hover:bg-surface-2 hover:text-text-secondary transition-colors"
+                  >
+                    {s.title || "Conversación sin título"}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
-        >
-          <LogOut size={16} className="text-gray-500" />
-          Cerrar sesión
-        </button>
-      </div>
-    </aside>
+
+        {/* ── Footer: expand + user ─────────────────────── */}
+        <div className="border-t border-border px-2 py-3 shrink-0">
+          {sidebarCollapsed ? (
+            <div className="flex flex-col items-center gap-2">
+              <button onClick={toggleSidebar} className="text-text-muted hover:text-text-secondary transition-colors p-1">
+                <PanelLeftOpen size={16} />
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="focus-visible:outline-none">
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="end">
+                  <DropdownMenuLabel>{email ?? "Usuario"}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut size={14} className="mr-2" />
+                    Cerrar sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex w-full items-center gap-3 rounded-[--radius] px-2 py-1.5 hover:bg-surface-2 transition-colors focus-visible:outline-none">
+                  <Avatar className="h-7 w-7 shrink-0">
+                    <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="truncate text-xs font-medium text-text-secondary">{email ?? "Usuario"}</p>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-52">
+                <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/settings"><Settings size={14} className="mr-2" />Ajustes</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-error focus:text-error">
+                  <LogOut size={14} className="mr-2" />Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </motion.aside>
+    </TooltipProvider>
   );
 }
