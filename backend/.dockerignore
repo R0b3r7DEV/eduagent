@@ -1,0 +1,45 @@
+# Python bytecode
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Environment / secrets — never bake into the image
+.env
+.env.*
+
+# Version control
+.git
+.gitignore
+
+# Tests and coverage
+tests/
+.pytest_cache
+htmlcov/
+.coverage
+
+# Linting caches
+.ruff_cache
+.mypy_cache
+
+# Virtual environments
+.venv
+venv
+
+# Node (shouldn't be here, but just in case)
+node_modules
+
+# Docs
+*.md
+docs/
+
+# IDE
+.vscode
+.idea
+
+# Docker artefacts
+Dockerfile
+.dockerignore
+
+# uv cache
+.uv_cache
