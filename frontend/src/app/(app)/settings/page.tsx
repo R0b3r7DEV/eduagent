@@ -4,6 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Settings, KeyRound, User, Monitor, Eye, EyeOff, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { ClaudeIcon, GeminiIcon } from "@/components/icons";
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import { useQueryClient } from "@tanstack/react-query";
@@ -111,21 +112,24 @@ function ProviderKeyCard({
     )}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-text-primary">{title}</p>
-            <Badge variant={badgeVariant}>{badgeLabel}</Badge>
-            {isActive && (
-              <span className="rounded-full bg-violet-600/20 px-2 py-0.5 text-[10px] font-medium text-violet-400">
-                ACTIVO
-              </span>
-            )}
+        <div className="flex items-start gap-3">
+          {provider === "anthropic" ? <ClaudeIcon size={36} /> : <GeminiIcon size={36} />}
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-text-primary">{title}</p>
+              <Badge variant={badgeVariant}>{badgeLabel}</Badge>
+              {isActive && (
+                <span className="rounded-full bg-violet-600/20 px-2 py-0.5 text-[10px] font-medium text-violet-400">
+                  ACTIVO
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-text-muted mt-0.5">{description}</p>
           </div>
-          <p className="text-xs text-text-muted mt-0.5">{description}</p>
         </div>
 
         {/* Status indicator */}
-        <div className="flex items-center gap-1.5 text-xs text-text-muted shrink-0">
+        <div className="flex items-center gap-1.5 text-xs text-text-muted shrink-0 ml-2">
           <div className={cn("h-2 w-2 rounded-full", hasKey ? "bg-success" : "bg-border")} />
           {hasKey ? "Configurado" : "Sin key"}
         </div>
@@ -358,14 +362,14 @@ function ProfileSection() {
 export default function SettingsPage() {
   return (
     <main className="flex h-full flex-col overflow-hidden bg-bg">
-      <div className="border-b border-border bg-surface px-6 py-4 shrink-0">
+      <div className="border-b border-border bg-surface px-4 py-4 sm:px-6 shrink-0">
         <div className="flex items-center gap-2.5">
           <Settings size={18} className="text-violet-400" />
           <h1 className="text-lg font-semibold text-text-primary">Ajustes</h1>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
         <div className="max-w-2xl mx-auto">
           <Tabs defaultValue="apikey">
             <TabsList className="mb-6">

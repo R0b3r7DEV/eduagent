@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import {
   GraduationCap, ExternalLink, CheckCircle2, ChevronRight, ChevronLeft, Eye, EyeOff,
 } from "lucide-react";
+import { ClaudeIcon, GeminiIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +49,7 @@ const variants = {
 interface ProviderCardProps {
   selected: boolean;
   onClick: () => void;
+  icon: React.ReactNode;
   title: string;
   subtitle: string;
   badgeLabel: string;
@@ -63,23 +65,26 @@ interface ProviderCardProps {
 }
 
 function ProviderCard({
-  selected, onClick, title, subtitle, badgeLabel, badgeVariant,
+  selected, onClick, icon, title, subtitle, badgeLabel, badgeVariant,
   href, hrefLabel, showKey, onToggleKey, placeholder, error, inputProps,
 }: ProviderCardProps) {
   return (
     <div
       onClick={onClick}
       className={cn(
-        "cursor-pointer rounded-[--radius-xl] border p-5 transition-all",
+        "cursor-pointer rounded-[--radius-xl] border p-4 transition-all",
         selected
           ? "border-violet-600/60 bg-violet-600/5 ring-1 ring-violet-600/30"
           : "border-border bg-surface-2 hover:border-violet-600/30 hover:bg-surface-3",
       )}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="font-semibold text-text-primary">{title}</p>
-          <p className="text-xs text-text-muted mt-0.5">{subtitle}</p>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          {icon}
+          <div>
+            <p className="font-semibold text-text-primary leading-tight">{title}</p>
+            <p className="text-xs text-text-muted mt-0.5">{subtitle}</p>
+          </div>
         </div>
         <Badge variant={badgeVariant}>{badgeLabel}</Badge>
       </div>
@@ -229,7 +234,8 @@ export default function OnboardingPage() {
                   <ProviderCard
                     selected={selectedProvider === "anthropic"}
                     onClick={() => setSelectedProvider("anthropic")}
-                    title="Anthropic Claude"
+                    icon={<ClaudeIcon size={36} />}
+                    title="Claude"
                     subtitle="claude-sonnet-4-6 · Más potente y preciso"
                     badgeLabel="Recomendado"
                     badgeVariant="default"
@@ -245,15 +251,16 @@ export default function OnboardingPage() {
                   <ProviderCard
                     selected={selectedProvider === "gemini"}
                     onClick={() => setSelectedProvider("gemini")}
-                    title="Google Gemini"
-                    subtitle="gemini-2.0-flash · Perfecto para empezar sin coste"
+                    icon={<GeminiIcon size={36} />}
+                    title="Gemini"
+                    subtitle="gemini-2.0-flash · Gratis en AI Studio"
                     badgeLabel="Gratis"
                     badgeVariant="success"
                     href="https://aistudio.google.com/app/apikey"
                     hrefLabel="Obtener clave gratis en aistudio.google.com"
                     showKey={showGemKey}
                     onToggleKey={() => setShowGemKey(v => !v)}
-                    placeholder="AIzaSy…"
+                    placeholder="AIzaSy… o AQ.A…"
                     error={gemForm.formState.errors.api_key?.message}
                     inputProps={gemForm.register("api_key")}
                   />
@@ -283,24 +290,33 @@ export default function OnboardingPage() {
                   Sincronizo tus deberes y materiales automáticamente. Puedes hacerlo más tarde en Ajustes.
                 </p>
                 <div className="space-y-3">
-                  <button className="flex w-full items-center gap-4 rounded-[--radius-lg] border border-border bg-surface-2 p-4 text-left hover:border-violet-600/50 hover:bg-surface-3 transition-colors">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10">
-                      <span className="text-lg font-bold text-orange-400">M</span>
+                  <div className="flex w-full items-center gap-4 rounded-[--radius-lg] border border-border bg-surface-2 p-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-500/10">
+                      {/* Moodle M icon */}
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 18V8l4.5 5 4.5-5v10M12 18V8l4.5 5 4.5-5v10" stroke="#F4832A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-text-primary">Moodle</p>
-                      <p className="text-xs text-text-muted">Configura en Ajustes → Aulas virtuales</p>
+                      <p className="text-xs text-text-muted">Configura en Ajustes → Aula Virtual</p>
                     </div>
-                  </button>
-                  <button className="flex w-full items-center gap-4 rounded-[--radius-lg] border border-border bg-surface-2 p-4 text-left hover:border-violet-600/50 hover:bg-surface-3 transition-colors">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
-                      <span className="text-sm font-bold text-blue-400">GC</span>
+                  </div>
+                  <div className="flex w-full items-center gap-4 rounded-[--radius-lg] border border-border bg-surface-2 p-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-500/10">
+                      {/* Google Classroom icon */}
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="4" width="20" height="16" rx="2" fill="#1E8E3E" opacity="0.15"/>
+                        <rect x="2" y="4" width="20" height="16" rx="2" stroke="#1E8E3E" strokeWidth="1.5"/>
+                        <circle cx="12" cy="11" r="3" fill="#1E8E3E"/>
+                        <path d="M6 17c0-2 2.7-3 6-3s6 1 6 3" stroke="#1E8E3E" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-text-primary">Google Classroom</p>
-                      <p className="text-xs text-text-muted">Requiere OAuth en Ajustes</p>
+                      <p className="text-xs text-text-muted">Configura en Ajustes → Aula Virtual</p>
                     </div>
-                  </button>
+                  </div>
                 </div>
                 <div className="mt-6 flex gap-2">
                   <Button type="button" variant="ghost" size="icon" onClick={back}>
