@@ -20,11 +20,11 @@ logger = structlog.get_logger()
 # ── PostgreSQL (Supabase) ──────────────────────────────────────────────────────
 engine = create_async_engine(
     settings.database_url,
-    echo=settings.environment == "development",
-    # Supabase session pooler closes idle connections; keep pool small
-    pool_size=5,
-    max_overflow=10,
+    echo=False,
+    pool_size=3,
+    max_overflow=5,
     pool_pre_ping=True,
+    pool_recycle=300,
 )
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
