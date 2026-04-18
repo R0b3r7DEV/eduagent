@@ -302,7 +302,26 @@ function AppearanceSection() {
 
 // ── Profile section ────────────────────────────────────────────────────────────
 
+const profileSchema = z.object({
+  name: z.string().min(1, "El nombre no puede estar vacío").max(80),
+  age: z.coerce.number().min(5, "Mínimo 5 años").max(120, "Máximo 120 años"),
+});
+type ProfileForm = z.infer<typeof profileSchema>;
+
 function ProfileSection() {
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ProfileForm>({
+    resolver: zodResolver(profileSchema),
+  });
+
+  async function onSave(data: ProfileForm) {
+    try {
+      await apiFetch("/user/me", { method: "PATCH", body: JSON.stringify(data) });
+      toast.success("Perfil actualizado");
+    } catch {
+      toast.error("Error al guardar el perfil");
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -313,7 +332,22 @@ function ProfileSection() {
         <CardDescription>Edita tu nombre y nivel educativo.</CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-text-muted">Sección de perfil — próximamente.</p>
+        <form onSubmit={handleSubmit(onSave)} className="space-y-4 max-w-sm">
+          <div className="space-y-1.5">
+            <Label>Nombre</Label>
+            <Input {...register("name")} placeholder="Tu nombre" />
+            {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label>Edad</Label>
+            <Input {...register("age")} type="number" placeholder="Ej: 16" />
+            {errors.age && <p className="text-xs text-red-500">{errors.age.message}</p>}
+            <p className="text-xs text-text-muted">El nivel educativo se calcula automáticamente según tu edad.</p>
+          </div>
+          <Button type="submit" disabled={isSubmitting} size="sm">
+            {isSubmitting ? "Guardando…" : "Guardar cambios"}
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );

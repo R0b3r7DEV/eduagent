@@ -7,11 +7,40 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agent.llm_provider import AnthropicProvider, GeminiProvider, get_provider
 from app.dependencies import get_current_user, get_db
 from app.models.user import User
-from app.schemas.user import ApiKeyDelete, ApiKeySet, ApiKeyStatus, ApiKeyVerifyResult, ProviderKeyStatus
+from app.schemas.user import ApiKeyDelete, ApiKeySet, ApiKeyStatus, ApiKeyVerifyResult, ProviderKeyStatus, UserRead, UserUpdate
 from app.services.crypto import DecryptionError, decrypt, encrypt
 
 logger = structlog.get_logger()
 router = APIRouter()
+
+
+# ── Profile ────────────────────────────────────────────────────────────────────
+
+@router.get("/me", response_model=UserRead)
+async def get_profile(current_user: User = Depends(get_current_user)) -> User:
+    return current_user
+
+
+@router.patch("/me", response_model=UserRead)
+async def update_profile(
+    body: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    if body.name is not None:
+        current_user.name = body.name
+    if body.age is not None:
+        current_user.age = body.age
+        if body.age <= 12:
+            current_user.student_level = "child"
+        elif body.age <= 17:
+            current_user.student_level = "teen"
+        else:
+            current_user.student_level = "adult"
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
 
 
 # ── Status ─────────────────────────────────────────────────────────────────────
