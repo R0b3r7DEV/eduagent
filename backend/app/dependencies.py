@@ -18,17 +18,15 @@ logger = structlog.get_logger()
 logger = structlog.get_logger()
 
 # ── PostgreSQL (Supabase) ──────────────────────────────────────────────────────
+_db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql+psycopg://")
+
 engine = create_async_engine(
-    settings.database_url,
+    _db_url,
     echo=False,
     pool_size=3,
     max_overflow=5,
     pool_pre_ping=True,
     pool_recycle=300,
-    connect_args={
-        "statement_cache_size": 0,
-        "server_settings": {"application_name": "eduagent"},
-    },
 )
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
