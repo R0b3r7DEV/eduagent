@@ -18,7 +18,12 @@ logger = structlog.get_logger()
 logger = structlog.get_logger()
 
 # ── PostgreSQL (Supabase) ──────────────────────────────────────────────────────
-_db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql+psycopg://")
+_db_url = (
+    settings.database_url
+    .replace("postgresql+asyncpg://", "postgresql+psycopg://")
+    .replace("?ssl=require", "?sslmode=require")
+    .replace("&ssl=require", "&sslmode=require")
+)
 
 engine = create_async_engine(
     _db_url,
