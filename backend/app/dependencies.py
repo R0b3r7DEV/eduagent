@@ -64,9 +64,11 @@ async def get_current_user(
     """
     from app.models.user import User
 
+    import asyncio
+
     token = credentials.credentials
     try:
-        response = _supabase.auth.get_user(token)
+        response = await asyncio.to_thread(_supabase.auth.get_user, token)
         sb_user = response.user
         if sb_user is None:
             raise ValueError("No user returned")
