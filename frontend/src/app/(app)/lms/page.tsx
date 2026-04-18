@@ -77,6 +77,21 @@ export default function LMSPage() {
   }
 
   const moodleConnected = connections.find((c) => c.provider === "moodle");
+  const googleConnected = connections.find((c) => c.provider === "google_classroom");
+  const [googleConnecting, setGoogleConnecting] = useState(false);
+
+  async function handleGoogleConnect() {
+    setGoogleConnecting(true);
+    try {
+      const redirectUri = `${window.location.origin}/lms/google-callback`;
+      const data: any = await apiFetch(`/lms/connect/google/url?redirect_uri=${encodeURIComponent(redirectUri)}`);
+      window.location.href = data.url;
+    } catch (err) {
+      const msg = err instanceof ApiError ? (err.body as any)?.detail : "Error al conectar con Google";
+      toast.error(msg);
+      setGoogleConnecting(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
@@ -187,17 +202,39 @@ export default function LMSPage() {
         </CardContent>
       </Card>
 
-      {/* ── Google Classroom (coming soon) ── */}
-      <Card className="opacity-60">
+      {/* ── Google Classroom ── */}
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Google Classroom</CardTitle>
-            <Badge variant="outline">Próximamente</Badge>
+            <div className="flex items-center gap-2">
+              <School size={16} className="text-blue-400" />
+              <CardTitle className="text-base">Google Classroom</CardTitle>
+            </div>
+            {googleConnected && (
+              <Badge variant="success" className="flex items-center gap-1">
+                <CheckCircle2 size={11} /> Conectado
+              </Badge>
+            )}
           </div>
           <CardDescription>
             Conecta Google Classroom para sincronizar coursework y fechas de entrega.
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <Button
+            onClick={handleGoogleConnect}
+            disabled={googleConnecting}
+            size="sm"
+            variant={googleConnected ? "outline" : "default"}
+          >
+            {googleConnecting ? "Redirigiendo…" : googleConnected ? "Reconectar cuenta" : "Conectar con Google"}
+          </Button>
+          {!googleConnected && (
+            <p className="mt-2 text-xs text-text-muted">
+              Necesitas activar la API de Google Classroom en tu proyecto de Google Cloud.
+            </p>
+          )}
+        </CardContent>
       </Card>
     </div>
   );
