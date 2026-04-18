@@ -3,20 +3,17 @@
 from typing import AsyncGenerator
 
 import anthropic
+import httpx
 import redis.asyncio as aioredis
 import structlog
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from supabase import create_client
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
 
 logger = structlog.get_logger()
-
-# ── Supabase client (used for JWT verification) ───────────────────────────────
-_supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
 
 logger = structlog.get_logger()
 
@@ -64,14 +61,20 @@ async def get_current_user(
     """
     from app.models.user import User
 
-    import asyncio
-
     token = credentials.credentials
     try:
-        response = await asyncio.to_thread(_supabase.auth.get_user, token)
-        sb_user = response.user
-        if sb_user is None:
-            raise ValueError("No user returned")
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"{settings.supabase_url}/auth/v1/user",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "apikey": settings.supabase_anon_key,
+                },
+                timeout=10,
+            )
+        if resp.status_code != 200:
+            raise ValueError(f"Supabase returned {resp.status_code}")
+        data = resp.json()
     except Exception as exc:
         logger.warning("auth.jwt.invalid", error=str(exc))
         raise HTTPException(
@@ -80,8 +83,8 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
-    supabase_uid: str = sb_user.id
-    email: str = sb_user.email or ""
+    supabase_uid: str = data["id"]
+    email: str = data.get("email", "")
 
     result = await db.execute(select(User).where(User.supabase_uid == supabase_uid))
     user = result.scalar_one_or_none()
