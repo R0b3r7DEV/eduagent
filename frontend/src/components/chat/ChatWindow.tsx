@@ -8,7 +8,7 @@ import { useDocuments } from "@/hooks/useDocuments";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import MessageBubble from "./MessageBubble";
 import InputBar from "./InputBar";
-import { GraduationCap, RotateCcw, PanelRight, BookOpen, Calculator, FlaskConical, Languages } from "lucide-react";
+import { GraduationCap, RotateCcw, PanelRight, BookOpen, Calculator, FlaskConical, Languages, Menu } from "lucide-react";
 
 const SUGGESTIONS = [
   { icon: BookOpen,     text: "Resume mi último tema de Historia"     },
@@ -20,7 +20,7 @@ const SUGGESTIONS = [
 export default function ChatWindow() {
   const { messages, sendMessage } = useChat();
   const reset = useChatStore((s) => s.reset);
-  const { rightPanelOpen, toggleRightPanel } = useUiStore();
+  const { rightPanelOpen, toggleRightPanel, toggleMobileMenu } = useUiStore();
   const { upload } = useDocuments();
   const bottomRef = useRef<HTMLDivElement>(null);
   const isStreaming = messages.some(m => m.streaming);
@@ -33,10 +33,19 @@ export default function ChatWindow() {
     <div className="flex flex-1 flex-col overflow-hidden min-w-0">
       {/* ── Header ───────────────────────────────────── */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4 shrink-0">
-        <h2 className="text-sm font-medium text-text-secondary truncate">
-          {messages.length === 0 ? "Nueva conversación" : "Conversación"}
-        </h2>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={toggleMobileMenu}
+            className="md:hidden flex-shrink-0 rounded-[--radius-sm] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text-secondary transition-colors"
+          >
+            <Menu size={18} />
+          </button>
+          <h2 className="text-sm font-medium text-text-secondary truncate">
+            {messages.length === 0 ? "Nueva conversación" : "Conversación"}
+          </h2>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
           {messages.length > 0 && (
             <button
               onClick={reset}
@@ -64,7 +73,7 @@ export default function ChatWindow() {
                 key="empty"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex h-full min-h-[calc(100vh-12rem)] flex-col items-center justify-center gap-8 px-6 py-10"
+                className="flex h-full min-h-[calc(100dvh-12rem)] flex-col items-center justify-center gap-6 px-4 py-10"
               >
                 <div className="flex flex-col items-center gap-3 text-center">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-violet-800 shadow-lg">
@@ -78,7 +87,7 @@ export default function ChatWindow() {
                   </div>
                 </div>
 
-                <div className="grid w-full max-w-lg grid-cols-2 gap-2.5">
+                <div className="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
                   {SUGGESTIONS.map(({ icon: Icon, text }) => (
                     <button
                       key={text}

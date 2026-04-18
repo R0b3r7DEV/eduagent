@@ -45,7 +45,13 @@ export default function RightPanel() {
   const pending = tasks.filter(t => t.status !== "done").slice(0, 6);
 
   return (
-    <aside className="flex h-screen w-[280px] shrink-0 flex-col border-l border-border bg-surface overflow-hidden">
+    <>
+      {/* Mobile backdrop */}
+      <div
+        className="fixed inset-0 z-30 bg-black/50 md:hidden"
+        onClick={toggleRightPanel}
+      />
+    <aside className="fixed inset-y-0 right-0 z-40 flex w-[85vw] max-w-[300px] md:relative md:inset-auto md:z-auto md:w-[280px] md:max-w-none h-full shrink-0 flex-col border-l border-border bg-surface overflow-hidden shadow-2xl md:shadow-none">
       <div className="flex h-14 items-center justify-between px-4 border-b border-border shrink-0">
         <h3 className="text-sm font-semibold text-text-primary">Contexto</h3>
         <button onClick={toggleRightPanel} className="text-text-muted hover:text-text-secondary transition-colors">
@@ -75,5 +81,6 @@ export default function RightPanel() {
         </div>
       </div>
     </aside>
+    </>
   );
 }

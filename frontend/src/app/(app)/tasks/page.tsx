@@ -40,7 +40,7 @@ export default function TasksPage() {
   return (
     <main className="flex h-full flex-col overflow-hidden bg-bg">
       {/* Header */}
-      <div className="border-b border-border bg-surface px-6 py-4 shrink-0">
+      <div className="border-b border-border bg-surface px-4 py-4 sm:px-6 shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
             <CheckSquare size={18} className="text-violet-400" />
@@ -60,8 +60,8 @@ export default function TasksPage() {
         </div>
 
         {/* Search + filters */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-xs">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div className="relative flex-1 sm:max-w-xs">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <Input
               placeholder="Buscar deberes…"
@@ -70,7 +70,7 @@ export default function TasksPage() {
               className="pl-8 h-8 text-xs"
             />
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             {FILTERS.map(f => (
               <button
                 key={f}
@@ -89,7 +89,7 @@ export default function TasksPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
         {error && (
           <div className="mb-4 flex items-center gap-2 rounded-[--radius-lg] border border-error/20 bg-error/8 px-4 py-3 text-sm text-error">
             <AlertCircle size={15} className="shrink-0" />

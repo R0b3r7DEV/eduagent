@@ -27,7 +27,11 @@ const NAV = [
   { href: "/settings",  label: "Ajustes",     icon: Settings      },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export default function Sidebar({ onClose }: SidebarProps = {}) {
   const pathname = usePathname();
   const router   = useRouter();
   const reset    = useChatStore((s) => s.reset);
@@ -49,9 +53,9 @@ export default function Sidebar() {
   return (
     <TooltipProvider delayDuration={300}>
       <motion.aside
-        animate={{ width: sidebarCollapsed ? 64 : 260 }}
+        animate={{ width: onClose ? 270 : sidebarCollapsed ? 64 : 260 }}
         transition={{ duration: 0.22, ease: "easeInOut" }}
-        className="relative flex h-screen flex-col border-r border-border bg-surface overflow-hidden"
+        className="relative flex h-full flex-col border-r border-border bg-surface overflow-hidden"
       >
         {/* ── Header ───────────────────────────────────────── */}
         <div className="flex h-14 items-center justify-between px-3 border-b border-border shrink-0">
@@ -73,7 +77,11 @@ export default function Sidebar() {
               <GraduationCap size={14} className="text-white" />
             </div>
           )}
-          {!sidebarCollapsed && (
+          {onClose ? (
+            <button onClick={onClose} className="text-text-muted hover:text-text-secondary transition-colors p-1 rounded-md hover:bg-surface-2">
+              <PanelLeftClose size={16} />
+            </button>
+          ) : !sidebarCollapsed && (
             <button onClick={toggleSidebar} className="text-text-muted hover:text-text-secondary transition-colors p-1 rounded-md hover:bg-surface-2">
               <PanelLeftClose size={16} />
             </button>

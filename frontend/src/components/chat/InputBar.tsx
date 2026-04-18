@@ -117,7 +117,7 @@ export default function InputBar({ onSend, onUpload, disabled }: Props) {
       </div>
 
       <input {...getInputProps()} />
-      <p className="mt-1.5 text-center text-[11px] text-text-muted">
+      <p className="hidden md:block mt-1.5 text-center text-[11px] text-text-muted">
         Enter para enviar · Shift+Enter para nueva línea
       </p>
     </div>
