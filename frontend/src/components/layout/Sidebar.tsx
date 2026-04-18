@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, CheckSquare, FileText, Settings,
-  LogOut, GraduationCap, Plus, PanelLeftClose, PanelLeftOpen,
+  LogOut, GraduationCap, Plus, PanelLeftClose, PanelLeftOpen, School,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useChatStore } from "@/stores/chatStore";
@@ -23,6 +23,7 @@ const NAV = [
   { href: "/chat",      label: "Chat",        icon: MessageSquare },
   { href: "/tasks",     label: "Deberes",     icon: CheckSquare   },
   { href: "/documents", label: "Documentos",  icon: FileText      },
+  { href: "/lms",       label: "Aula Virtual", icon: School       },
   { href: "/settings",  label: "Ajustes",     icon: Settings      },
 ];
 
