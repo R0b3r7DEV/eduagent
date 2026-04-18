@@ -18,21 +18,14 @@ logger = structlog.get_logger()
 logger = structlog.get_logger()
 
 # ── PostgreSQL (Supabase) ──────────────────────────────────────────────────────
-_db_url = (
-    settings.database_url
-    .replace("postgresql+asyncpg://", "postgresql+psycopg://")
-    .replace("?ssl=require", "?sslmode=require")
-    .replace("&ssl=require", "&sslmode=require")
-)
-
 engine = create_async_engine(
-    _db_url,
+    settings.database_url,
     echo=False,
     pool_size=3,
     max_overflow=5,
-    pool_pre_ping=True,
+    pool_pre_ping=False,
     pool_recycle=300,
-    connect_args={"prepare_threshold": 0},
+    connect_args={"statement_cache_size": 0},
 )
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
