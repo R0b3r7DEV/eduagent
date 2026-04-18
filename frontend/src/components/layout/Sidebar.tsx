@@ -5,8 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, CheckSquare, FileText, Settings,
-  LogOut, GraduationCap, Plus, PanelLeftClose, PanelLeftOpen, School,
+  LogOut, Plus, PanelLeftClose, PanelLeftOpen, School,
 } from "lucide-react";
+import { EduAgentMark } from "@/components/icons";
 import { supabase } from "@/lib/supabase";
 import { useChatStore } from "@/stores/chatStore";
 import { useUiStore } from "@/stores/uiStore";
@@ -65,16 +66,16 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="flex items-center gap-2.5"
               >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600">
-                  <GraduationCap size={14} className="text-white" />
-                </div>
-                <span className="text-[15px] font-semibold text-text-primary">EduAgent AI</span>
+                <EduAgentMark size={28} />
+                <span className="text-[15px] font-semibold text-text-primary">
+                  EduAgent <span className="text-violet-400">AI</span>
+                </span>
               </motion.div>
             )}
           </AnimatePresence>
           {sidebarCollapsed && (
-            <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600">
-              <GraduationCap size={14} className="text-white" />
+            <div className="mx-auto">
+              <EduAgentMark size={28} />
             </div>
           )}
           {onClose ? (

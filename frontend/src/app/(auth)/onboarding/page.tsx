@@ -7,9 +7,9 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import {
-  GraduationCap, ExternalLink, CheckCircle2, ChevronRight, ChevronLeft, Eye, EyeOff,
+  ExternalLink, CheckCircle2, ChevronRight, ChevronLeft, Eye, EyeOff,
 } from "lucide-react";
-import { ClaudeIcon, GeminiIcon } from "@/components/icons";
+import { ClaudeIcon, GeminiIcon, EduAgentMark } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -176,11 +176,14 @@ export default function OnboardingPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4 py-12">
       {/* Logo */}
-      <div className="mb-10 flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600">
-          <GraduationCap size={18} className="text-white" />
+      <div className="mb-10 flex flex-col items-center gap-2">
+        <EduAgentMark size={52} />
+        <div className="text-center">
+          <p className="text-xl font-bold text-text-primary tracking-tight">
+            EduAgent <span className="text-violet-400">AI</span>
+          </p>
+          <p className="text-xs text-text-muted mt-0.5">Tu tutor inteligente</p>
         </div>
-        <span className="text-lg font-bold text-text-primary">EduAgent AI</span>
       </div>
 
       <div className="mb-10">

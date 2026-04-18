@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { GraduationCap, Brain, BookOpen, Target, Eye, EyeOff } from "lucide-react";
+import { Brain, BookOpen, Target, Eye, EyeOff } from "lucide-react";
+import { EduAgentMark } from "@/components/icons";
 
 const schema = z.object({
   email: z.string().email("Email inválido"),
@@ -63,10 +64,10 @@ export default function LoginPage() {
         className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-gradient-to-br from-violet-900 via-violet-800 to-indigo-900 p-12 text-white"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
-            <GraduationCap size={20} className="text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight">EduAgent AI</span>
+          <EduAgentMark size={36} />
+          <span className="text-xl font-bold tracking-tight">
+            EduAgent <span className="text-violet-300">AI</span>
+          </span>
         </div>
 
         <div>
@@ -111,11 +112,11 @@ export default function LoginPage() {
       >
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
-          <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600">
-              <GraduationCap size={16} className="text-white" />
-            </div>
-            <span className="text-lg font-bold text-text-primary">EduAgent AI</span>
+          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+            <EduAgentMark size={32} />
+            <span className="text-lg font-bold text-text-primary">
+              EduAgent <span className="text-violet-400">AI</span>
+            </span>
           </div>
 
           <motion.div
