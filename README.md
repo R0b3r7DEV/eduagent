@@ -2,150 +2,63 @@
 
 # EduAgent AI
 
-**Agente educativo con IA que se conecta a tu aula virtual, aprende tu temario y te ayuda a estudiar.**
+**An AI study tutor that connects to your virtual classroom, learns your course materials and helps you study.**
 
 [![Backend](https://img.shields.io/badge/backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Frontend](https://img.shields.io/badge/frontend-Next.js%2015-black?logo=next.js)](https://nextjs.org)
-[![LLM](https://img.shields.io/badge/LLM-Claude%20Sonnet%204.6-orange?logo=anthropic)](https://anthropic.com)
+[![Agent](https://img.shields.io/badge/agent-LangGraph-1C3C3C?logo=langchain&logoColor=white)](https://github.com/langchain-ai/langgraph)
+[![LLM](https://img.shields.io/badge/LLM-Claude%20%2F%20Gemini-D97757?logo=anthropic&logoColor=white)](https://anthropic.com)
 [![DB](https://img.shields.io/badge/database-Supabase%20%2B%20pgvector-3ECF8E?logo=supabase)](https://supabase.com)
 [![Deploy](https://img.shields.io/badge/deploy-Railway%20%2B%20Vercel-black)](https://railway.app)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-[Demo](#) · [Documentación](#variables-de-entorno) · [Reportar un bug](https://github.com/R0b3r7DEV/eduagent/issues)
-
 </div>
 
----
+<!-- TODO: screenshot — chat window answering from course materials with citations -->
 
-## Qué es EduAgent AI
-
-EduAgent AI es un tutor inteligente que se adapta a tu nivel educativo. Se conecta a tu aula virtual (Moodle, Google Classroom), ingesta los materiales del curso y responde usando esos contenidos como fuente de verdad.
-
-**Características principales:**
-
-- **Chat adaptativo** — tono y vocabulario ajustados automáticamente según tu edad (infantil, adolescente, adulto)
-- **RAG sobre tus apuntes** — sube PDFs, DOCX o vídeos y el agente los indexa para responder con precisión y citar la fuente
-- **Gestión de deberes** — sincroniza tareas pendientes desde Moodle o Google Classroom con fechas de entrega y prioridad
-- **Modo anti-trampa** — en ejercicios el agente guía con pistas progresivas, nunca da la respuesta directa
-- **Streaming en tiempo real** — respuestas via Server-Sent Events sin esperar a que termine de generar
-- **Multi-LLM** — cada usuario aporta su propia API key de Anthropic o Google Gemini
+*🇪🇸 A Spanish version of this document is available on request.*
 
 ---
 
-## Stack tecnológico
+## What EduAgent AI is
 
-| Capa | Tecnología |
+EduAgent AI is a study tutor that adapts to the student's level. It connects to a virtual classroom
+(Moodle, Google Classroom), ingests the course materials, and answers using **those materials as the
+source of truth** (retrieval-augmented generation) — with citations, not hallucinations.
+
+## Key features
+
+- **Adaptive tutoring** — tone and vocabulary adjust automatically to the learner's age band
+  (child / teen / adult), each with its own system prompt.
+- **RAG over your own notes** — upload PDFs, DOCX or videos; the agent indexes them and answers
+  precisely, citing the source.
+- **Homework management** — syncs pending tasks from Moodle or Google Classroom with due dates and
+  priority.
+- **Anti-cheating mode** — on exercises the agent guides with progressive hints and never hands over
+  the direct answer.
+- **Real-time streaming** — responses over Server-Sent Events, no waiting for full generation.
+- **Bring-your-own-key, multi-LLM** — each user supplies their own Anthropic or Google Gemini key,
+  stored encrypted at rest (Fernet).
+
+---
+
+## Tech stack
+
+| Layer | Technology |
 |---|---|
 | **Frontend** | Next.js 15 · TypeScript · Tailwind CSS · Zustand · TanStack Query |
-| **Backend** | Python 3.12 · FastAPI · LangGraph 0.2 · LlamaIndex |
-| **LLM** | Anthropic Claude Sonnet 4.6 / Google Gemini (key por usuario) |
+| **Backend** | Python 3.12 · FastAPI · LangGraph · LlamaIndex |
+| **LLM** | Anthropic Claude / Google Gemini (per-user key) |
 | **Embeddings** | Cohere `embed-multilingual-v3.0` |
-| **Base de datos** | Supabase PostgreSQL 16 + pgvector |
+| **Database** | Supabase PostgreSQL 16 + pgvector |
 | **Auth** | Supabase Auth (email + Google OAuth) |
-| **Almacenamiento** | Supabase Storage |
-| **Caché / sesiones** | Upstash Redis |
-| **Deploy backend** | Railway |
-| **Deploy frontend** | Vercel |
+| **Storage** | Supabase Storage |
+| **Cache / sessions** | Upstash Redis |
+| **Deploy** | Railway (backend) · Vercel (frontend) |
 
 ---
 
-## Inicio rápido (local con Docker)
-
-Requiere **Docker Desktop** instalado. No necesitas cuentas en la nube.
-
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/R0b3r7DEV/eduagent.git
-cd eduagent
-
-# 2. Crear el fichero de variables de entorno
-cp .env.example .env
-```
-
-Edita `.env` con los valores mínimos:
-
-```bash
-# Genera la clave Fernet (obligatoria)
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-# Pega el resultado en FERNET_SECRET_KEY=
-
-# Añade tu clave de Cohere (obligatoria para embeddings)
-# COHERE_API_KEY=tu-clave
-```
-
-```bash
-# 3. Arrancar todos los servicios
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-
-# 4. Aplicar migraciones (solo la primera vez)
-docker compose exec backend alembic upgrade head
-```
-
-| Servicio | URL |
-|---|---|
-| Frontend | http://localhost |
-| API docs | http://localhost:8000/docs |
-| pgAdmin | http://localhost:5050 |
-
----
-
-## Variables de entorno
-
-Copia `.env.example` a `.env` y rellena los valores. **Nunca subas `.env` a Git.**
-
-### Desarrollo local
-
-| Variable | Descripción | Cómo obtenerla |
-|---|---|---|
-| `FERNET_SECRET_KEY` | Cifra las API keys de usuario en BD | `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
-| `COHERE_API_KEY` | Embeddings multilingüe | [cohere.com](https://cohere.com) → API Keys |
-| `ANTHROPIC_API_KEY` | Fallback LLM en dev (opcional) | [console.anthropic.com](https://console.anthropic.com) |
-
-### Producción (cloud)
-
-| Variable | Descripción | Dónde conseguirla |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL con asyncpg | Supabase → Connect → Session pooler (puerto 5432) |
-| `SUPABASE_URL` | URL del proyecto | Supabase → Settings → API |
-| `SUPABASE_ANON_KEY` | Clave pública | Supabase → Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clave privada (solo backend) | Supabase → Settings → API |
-| `SUPABASE_JWT_SECRET` | Verificación de tokens | Supabase → Settings → API → JWT Settings |
-| `REDIS_URL` | Caché y sesiones | [upstash.com](https://upstash.com) → Redis |
-| `NEXT_PUBLIC_SUPABASE_URL` | Igual que `SUPABASE_URL` | — |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Igual que `SUPABASE_ANON_KEY` | — |
-| `NEXT_PUBLIC_API_URL` | URL pública del backend | Railway → tu servicio → Networking |
-
----
-
-## Despliegue en producción
-
-### 1 — Supabase
-
-1. Crea un nuevo proyecto en [supabase.com](https://supabase.com)
-2. Ve a **SQL Editor** y ejecuta el script de migraciones en `backend/alembic/versions/`
-3. Crea el bucket `documents` en **Storage**
-4. Copia las keys desde **Settings → API**
-
-### 2 — Upstash Redis
-
-1. Crea una base de datos en [upstash.com](https://upstash.com)
-2. Copia la URL `rediss://...` como `REDIS_URL`
-
-### 3 — Railway (backend)
-
-1. Nuevo proyecto → conecta el repo → selecciona la carpeta `backend`
-2. Añade todas las variables de entorno del apartado anterior
-3. Railway detecta el `Dockerfile` y despliega automáticamente
-
-### 4 — Vercel (frontend)
-
-1. Nuevo proyecto → importa el repo → **Root Directory:** `frontend`
-2. Añade las variables `NEXT_PUBLIC_*`
-3. Deploy
-
----
-
-## Arquitectura
+## Architecture
 
 ```
 ┌─────────────────┐        ┌──────────────────────────────────────┐
@@ -160,66 +73,102 @@ Copia `.env.example` a `.env` y rellena los valores. **Nunca subas `.env` a Git.
                            └────────┼────────────────┼─────────────┘
                                     │                │
                            ┌────────▼────────────────▼─────────────┐
-                           │         Supabase                       │
-                           │  PostgreSQL + pgvector  │  Storage     │
+                           │   Supabase (PostgreSQL + pgvector,     │
+                           │            Storage)                    │
                            └────────────────────────────────────────┘
                                     │
                            ┌────────▼──────────┐
-                           │   Upstash Redis   │
-                           │  (sesiones/caché) │
+                           │   Upstash Redis   │  (sessions / cache)
                            └───────────────────┘
 ```
 
----
-
-## Estructura del proyecto
-
-```
-eduagent/
-├── backend/
-│   ├── app/
-│   │   ├── agent/          # Grafo LangGraph, nodos, prompts, tools
-│   │   ├── api/v1/         # Endpoints: chat, documents, tasks, user, auth, lms
-│   │   ├── models/         # SQLAlchemy ORM (users, documents, tasks, sessions)
-│   │   ├── rag/            # Ingesta, embeddings Cohere, retriever, reranker
-│   │   ├── connectors/     # Moodle REST API, Google Classroom API
-│   │   └── services/       # Supabase client, storage, cifrado Fernet
-│   ├── alembic/            # Migraciones de base de datos
-│   ├── Dockerfile
-│   └── pyproject.toml
-├── frontend/
-│   └── src/
-│       ├── app/            # Rutas: /chat, /tasks, /documents, /settings
-│       ├── components/     # ChatWindow, MessageBubble, TaskList, Sidebar
-│       ├── hooks/          # useChat, useTasks, useDocuments, useSSE
-│       └── lib/            # API client tipado, Supabase client
-├── docker-compose.yml
-└── .env.example
-```
+The agent is a **LangGraph** graph: an orchestrator node routes to specialized nodes — `tutor`
+(age-adapted), `rag_retriever`, `summarizer` and `task_manager` — backed by tools
+(`search_documents`, `create_study_plan`, `explain_concept`, `get_pending_tasks`).
 
 ---
 
-## Comandos de desarrollo
+## Quick start (local, Docker)
+
+Requires **Docker Desktop**. No cloud accounts needed to run it locally.
 
 ```bash
-# Ejecutar tests con cobertura
-docker compose exec backend pytest tests/ -v --cov=app --cov-report=term-missing
+git clone https://github.com/R0b3r7DEV/eduagent.git
+cd eduagent
+cp .env.example .env
+```
 
-# Linting y formato
-docker compose exec backend ruff check app/ && black --check app/
+Set the minimum values in `.env`:
 
-# Nueva migración de base de datos
-docker compose exec backend alembic revision --autogenerate -m "descripcion"
+```bash
+# Fernet key (required — encrypts per-user API keys at rest)
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# → paste into FERNET_SECRET_KEY=
 
-# Logs del agente en tiempo real
-docker compose logs -f backend | grep -E "agent|rag|lms|error"
+# Cohere key (required — embeddings)
+# COHERE_API_KEY=your-key
+```
 
-# Shell de base de datos
-docker compose exec db psql -U eduagent -d eduagent
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+docker compose exec backend alembic upgrade head   # first run only
+```
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost |
+| API docs | http://localhost:8000/docs |
+| pgAdmin | http://localhost:5050 |
+
+Full environment-variable reference (local and production) and the Supabase / Upstash / Railway /
+Vercel deployment steps are documented in [`HOWTO.md`](HOWTO.md). Never commit `.env`.
+
+---
+
+## Project structure
+
+```
+backend/app/
+├── agent/          # LangGraph graph, nodes (orchestrator, tutor, rag_retriever, summarizer,
+│                   #   task_manager), age-band prompts, tools
+├── api/v1/         # endpoints: chat, documents, tasks, user, auth, lms
+├── models/         # SQLAlchemy ORM (users, documents, tasks, sessions, lms_connection)
+├── rag/            # ingestion, Cohere embeddings, retriever, reranker
+├── connectors/     # Moodle REST API, Google Classroom API, parser
+└── services/       # Supabase client, storage, Fernet crypto, chat/document/task services
+backend/alembic/    # database migrations
+frontend/src/
+├── app/            # routes: /chat, /tasks, /documents, /settings
+├── components/     # ChatWindow, MessageBubble, TaskList, Sidebar
+├── hooks/          # useChat, useTasks, useDocuments, useSSE
+└── lib/            # typed API client, Supabase client
 ```
 
 ---
 
-## Licencia
+## Development commands
+
+```bash
+docker compose exec backend pytest tests/ -v --cov=app          # tests + coverage
+docker compose exec backend ruff check app/                     # lint
+docker compose exec backend alembic revision --autogenerate -m "…"   # new migration
+```
+
+---
+
+## What I learned building this
+
+- Designing a **multi-node agent** (LangGraph) where an orchestrator routes to specialized tutor /
+  retrieval / task nodes, each with its own prompt and tools.
+- Building a full **RAG pipeline** end to end: document ingestion → Cohere multilingual embeddings →
+  pgvector retrieval → reranking → grounded, cited answers.
+- Integrating with **third-party LMS APIs** (Moodle, Google Classroom) behind a common connector
+  interface.
+- Handling **bring-your-own-key** securely: per-user LLM keys encrypted at rest with Fernet.
+- Shipping a real **async FastAPI + Next.js** app with SSE streaming, split across Railway and Vercel.
+
+---
+
+## License
 
 MIT © 2026 R0b3r7DEV
